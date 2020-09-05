@@ -1,0 +1,14 @@
+from static_models import utils
+from image.views import ImageDetailView
+from image.models import Image
+o = utils.model_generate(Image, 6, ImageDetailView)
+utils.save(o, "6")
+
+from static_models import utils
+from image.views import ImageDetailView
+from image.models import Image
+g = utils.ModelGenerator(Image, ImageDetailView)
+g.all()
+g(4)
+
+image.views.ImageDetailView

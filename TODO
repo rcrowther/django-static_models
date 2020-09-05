@@ -1,0 +1,11 @@
+= Detect
+Run onload (static?) checks
+
+Why is 'common' showing in management commands?
+
+? Namespace as site name
+This is an issue, as Django allows multiple ''sites'. Niether does 
+Settings have a useful suggestion. I thought DB.NAMe may do it, but for
+SQLLite thats a path. For now, it's 'site'
+
+Extend view to use slugs, like url and generator can
