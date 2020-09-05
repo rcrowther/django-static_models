@@ -86,7 +86,8 @@ For more options, run full static handling,
             post_save.connect(static_merge, sender=Page)
 
 
-
+g.obj_delete() can be used in the same way on post_delete, but be careful if you want to share the static pages, that you do not delete data expected elsewhere.
+ 
 ## Serving files
 The generated pages will have correct internal links ie. for resources like CSS or image links.
 
