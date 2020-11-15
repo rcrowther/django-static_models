@@ -46,9 +46,17 @@ Typically,
 
     ./manage.py -o modelstaticmerge pathToSomeModel pathToSomeView
 
-The 'overwrite' option prevents renaming, which is the default.
+- -o prevents renaming, which is the default.
+- -e add '.html' as an extension
+- -i use the given fieldname to generate ids 
 
-The management command is deliberately stripped down. You can do the same, with more options, by using the shell to import the ModelGenerator class from static_models.utils. 
+So,
+
+    ./manage.py modelstaticmerge -oe -i slug page.Page page.views.PageDetailView
+
+Will generate HTML files from the model Page via the PageDetailView view. The files will be put in media/site/page/ and will be named from the slug data + '.html'.
+
+The management command is a little stripped down. You can do the same, with more options, by using the shell to import the ModelGenerator class from static_models.utils. 
  
 
 ## Generating pages

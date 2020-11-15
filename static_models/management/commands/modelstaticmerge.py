@@ -19,6 +19,13 @@ class Command(BaseCommand):
             help="Replace currently existing files (default is to rename)",
         )
         parser.add_argument(
+            '-i',
+            '--id_fieldname',
+            #action='store_true',
+            #default='',
+            help="Pick a model field to use for writing filenames",
+        )
+        parser.add_argument(
             '-e',
             '--html_extension',
             action='store_true',
@@ -50,6 +57,7 @@ class Command(BaseCommand):
             Model, 
             View,
             overwrite=options['overwrite'],
+            id_fieldname=options['id_fieldname'],
             extension=extension,
         )
         count = g.all_create()

@@ -28,7 +28,7 @@ class ModelGenerator():
         that if not overwriting, storage systems such as the default may 
         attempt renaming rather than file overwriting.
     path_includes_view
-        Path includes the view name. Default False
+        Path written to includes the view name. Default False
     id_fieldname
         By default, the class writes and locates files using the pk as
         id. But if this parameter is set, it uses the value from this
