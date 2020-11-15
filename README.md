@@ -30,7 +30,17 @@ There are some considerations with this. A file with a non-html extension [can n
 
 The main code is in 'static_models.utils.ModelGenerator', which is well-documented. If you need something different, try look there.
 
-  
+## Install
+The code can either be download ed from Github, or installed uning pip,
+
+    pip3 install django-static-models
+
+The code needs to be declared in settings.py,
+
+    INSTALLED_APPS = [
+         'static_models.apps.StaticModelsConfig',
+    ]
+
 ## Management commands
 Typically,
 
@@ -105,9 +115,11 @@ Another way to serve pages is to use Django URL configuration. This has the disa
     from django.conf import settings
     from static_models.views import StaticView
         ...
-        path('image2/<int:pk>/', StaticView.as_view(path_root= settings.MEDIA_ROOT + '/site/article/'), name='image2-detail'),
+    path('site/<path:path>/', StaticView.as_view(path_root= settings.MEDIA_ROOT + '/site/'), name='site-detail'),
 
-This code uses MEDIA_ROOT. StaticView has no opinion on the pathstyle.
+This code uses MEDIA_ROOT. StaticView has no opinion on the pathstyle. 
+
+The URL config above uses a 'path' for URL segment capture. That means it will serve any file generated through this app using the default config. For fine-grained URLs, StaticView also accepts 'pk' and 'slug' segment catures. 
 
 You can define path_root using a custom class declaration, With that you can configure fancy URL resolution/HTTP responses etc. e.g.
 

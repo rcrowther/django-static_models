@@ -34,20 +34,25 @@ class StaticResponseMixin:
         id_path=None
         pk = self.kwargs.get('pk')
         slug = self.kwargs.get('slug')
+        path = self.kwargs.get('path')
         
         # start with pk
-        if pk is not None:
+        if (pk is not None):
             id_path = str(pk)
 
         # try slug.
-        if slug is not None and (pk is None):
+        if (slug is not None and (pk is None)):
             id_path = str(slug)
 
+        # try path
+        if ((pk is None) and (slug is None) and path is not None):
+            id_path = str(path)
+                    
         # If nothing defined, error.
         if (not id_path):
             raise AttributeError(
                 "StaticView %s must be called with a "
-                "parameter named 'pk' or 'slug' in the URLconf." % self.__class__.__name__
+                "parameter named 'pk', 'slug' or 'path' in the URLconf." % self.__class__.__name__
             )            
         return id_path
 
