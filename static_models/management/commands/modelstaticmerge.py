@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import module_loading
-from . import common
-#from static_models.utils import ModelGenerator 
+#from . import common
 from static_models.model_generator import ModelManager
 from static_models.settings import settings
 
@@ -62,13 +61,7 @@ class Command(BaseCommand):
                 id_fieldname=options['id_fieldname'],
                 extension=extension,
             )
-        # g = ModelGenerator(
-            # Model, 
-            # View,
-            # overwrite=options['overwrite'],
-            # id_fieldname=options['id_fieldname'],
-            # extension=extension,
-        # )
+
             count = g.all_create()
 
             if (options['verbosity'] > 0):

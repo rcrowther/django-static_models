@@ -2,6 +2,7 @@ from django.conf import settings as dsettings
 from django.core.exceptions import ImproperlyConfigured
 from static_models import utils
 from django.utils import module_loading
+#from django.db import models
 
 
         
@@ -35,14 +36,14 @@ class Settings():
 
     def build_modelviews(self, modelviews):
         b = []
-        for (model, view) in modelviews:
-
-            # check model exists
-            model = utils.get_model(model)
+        for (data, view) in modelviews:
+            if not isinstance(data, list):
+                # check model exists
+                data = utils.get_model(data)
 
             # test existance of a view?
             view = module_loading.import_string(view)
-            b.append((model, view))
+            b.append((data, view))
         return b
             
     def __repr__(self):
