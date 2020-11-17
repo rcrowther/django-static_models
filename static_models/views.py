@@ -54,7 +54,7 @@ class StaticResponseMixin:
                 "StaticView %s must be called with a "
                 "parameter named 'pk', 'slug' or 'path' in the URLconf." % self.__class__.__name__
             )            
-        return id_path
+        return id_path #+ '.html'
 
     def get_fullpath(self):
         #NB split out so you could, say, implement a 'delete' method on 

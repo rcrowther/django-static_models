@@ -24,9 +24,7 @@ Generate some pages,
 
 
 ## Overview
-This being Django, the action is not as simple as it sounds. What the app does is generate q request response, which in Django is an encoded stream, then writes the contents to storage, with a filename built from a pk.
-
-There are some considerations with this. A file with a non-html extension [can not be served through Django servers](#serving-files) (they are treaded as download streams). 
+This being Django, the action is not as simple as it sounds. What the app does is generate an HTML response, which in Django is an encoded stream, then writes the contents to storage, with a filename built from a pk (optionally, some other field, such as a slug). 
 
 The main code is in 'static_models.utils.ModelGenerator', which is well-documented. If you need something different, try look there.
 
@@ -41,26 +39,27 @@ The code needs to be declared in settings.py,
          'static_models.apps.StaticModelsConfig',
     ]
 
+
 ## Management commands
 Typically,
 
     ./manage.py -o modelstaticmerge pathToSomeModel pathToSomeView
 
-- -o prevents renaming, which is the default.
-- -e add '.html' as an extension
+- -e add .html as extension
+- -o prevents renaming, which is the default
 - -i use the given fieldname to generate ids 
 
 So,
 
-    ./manage.py modelstaticmerge -oe -i slug page.Page page.views.PageDetailView
+    ./manage.py modelstaticmerge -o -i slug page.Page page.views.PageDetailView
 
 Will generate HTML files from the model Page via the PageDetailView view. The files will be put in media/site/page/ and will be named from the slug data + '.html'.
 
 The management command is a little stripped down. You can do the same, with more options, by using the shell to import the ModelGenerator class from static_models.utils. 
  
 
-## Generating pages
-The app must be told where to put generated files. Variations of location can be configured,
+## Generating files
+The app must be told where to put generated files. If using the generator class, variations of location can be configured,
 
     model only
         Paths are ''base_path + model_name + id'. 'id' is by default the pk. This solution can only handle one set of pages per app, which would usually correspond to a DetailView. That said, the results are simple, e.g. ''.../media/site/appname/7'
@@ -68,6 +67,92 @@ The app must be told where to put generated files. Variations of location can be
     model and view
         Include the view name, which allows several views per app. Not as obvious, but flexibile e.g. ''.../media/site/appname/viewname/7'
 
+
+## Serving files
+The generated pages will have correct internal links ie. for resources like CSS or image links.
+
+
+
+### Through Django URL config
+One way to serve pages is to use Django URL configuration. This has the disadvantage of not being as clean as fully static pages, and some Django must remain. The advantage is you can configure URLs as you wish, and integrate with other Django code using a similar API to dynamic page building. Put this (or something similar) in ''urls.py',
+
+    from django.conf import settings
+    from static_models.views import StaticView
+        ...
+    path('site/<path:path>/', StaticView.as_view(path_root= settings.MEDIA_ROOT + '/site/'), name='site-detail'),
+
+This code uses MEDIA_ROOT. StaticView has no opinion on the pathstyle. 
+
+The URL config above uses a 'path' for URL segment capture. That means it will serve any file generated using the default config. 
+
+
+### Working inner links
+If there is a problem with the above, it is that links between pages will not work. All pages have been re-rooted to a url root 'site'. A link like 'page/many-wonders' will now be broken. It needs to be 'site/page/many-wonders'. And we don't want to configure a URL for web root ('/') because likely you have some home page or other good use for that.
+ 
+However, for fine-grained URLs, StaticView also accepts 'pk' and 'slug' segment captures. So you can generate static pages, then rewrite urls.py, e.g. 
+
+    from django.conf import settings
+    from static_models.views import StaticView
+        ...
+
+    # New URL for static pages
+    path('page/<slug:slug>/', StaticView.as_view(path_root= settings.MEDIA_ROOT + '/site/page/'), name='page-detail'),
+
+    # original URL for dynamic pages
+    #path('page/<slug:slug>/',  PageDetailView.as_view(), name='page-detail'), 
+
+Now links between pages work. And reverse URLs. But you will need to set up a URL path for every model you generate static files from (I suppose I could make a middleware solution, like the 'static' app, to choose between the two. Not considered, yet).
+
+
+### Static definition of path_root 
+This is not something that would be of interest to many.
+
+You can define path_root using a custom class declaration, With that you can configure fancy URL resolution/HTTP responses etc. e.g.
+
+    from django.conf import settings
+    from static_models.views import StaticView
+
+    class PageStaticView(StaticView):
+        path_root = settings.MEDIA_ROOT + '/site/page/'
+        ...
+
+And in ''urls.py',
+
+    from page.views import PageStaticView
+        ...
+        path('page/<int:pk>/', PageStaticView.as_view(), name='page-detail'),
+
+
+### As true static
+You want to type in a browser,
+
+    .../page/many-wonders
+
+And the server can dive into a directory,
+
+    '/'
+      └─ page/
+          └─ many-wonders
+
+There are problems/challenges here. They are as much to do with static serving in general as they are with Django.
+
+### '/' will search for index.html
+In Django it either errors, or gets a configured URL (Django is very well-behaved like this). 'index.html' is the classic server search.
+
+### Servers don't like files without extensions
+Your URLs are probably, in Django, set up with a slug. Or at least a pk. The links are to,
+
+    .../page/many-wonders
+
+Not,
+
+    .../page/many-wonders.html
+
+One way to use the pages is to transfer the filetree to /static and let the static server take over. This is super-cool deployment.
+
+There is an issue or two with this. For security reasons, Django storage devices will refuse to write pages into the /static directory. So I'm not overriding, even for maintenance work. You need to transfer the files by hand, or make some external dev automation. 
+
+Also, the Django dev server will not recognise pages that do not have an 'htm'/'html' extension. It will serve them as data streams. The generator allows you to put an 'html' extension on pages, but then URL links to the page will fail. There are all sorts of server/link fixes, or you may not care about dev viewing. If you are interested in this approach, you'll need to look at your server configuration. 
 
 ## Maintaining static pages
 How can the static page stock be maintained if content is changed? One way is to run a maintenance command periodically. If you want to merge automatically, there's a few ways, none are wonderful. I'd favour using the post_save signal in 'apps.py'. That will work with all model changes, and contains the logic within the app,
@@ -106,46 +191,6 @@ For more options, run full static handling,
 
 g.obj_delete() can be used in the same way on post_delete, but be careful if you want to share the static pages, that you do not delete data expected elsewhere.
  
-## Serving files
-The generated pages will have correct internal links ie. for resources like CSS or image links.
-
-### As true static
-One way to use the pages is to transfer the filetree to /static and let the static server take over. This is super-cool deployment.
-
-There is an issue or two with this. For security reasons, Django storage devices will refuse to write pages into the /static directory. So I'm not overriding, even for maintenance work. You need to transfer the files by hand, or make some external dev automation. 
-
-Also, the Django dev server will not recognise pages that do not have an 'htm'/'html' extension. It will serve them as data streams. The generator allows you to put an 'html' extension on pages, but then URL links to the page will fail. There are all sorts of server/link fixes, or you may not care about dev viewing. If you are interested in this approach, you'll need to look at your server configuration.
-
-
-### Through Django URL config
-Another way to serve pages is to use Django URL configuration. This has the disadvantage of not being as clean as fully static pages, and some Django must remain. The advantage is you can configure URLs as you wish, and integrate with other Django using a similar API to dynamic page building. Put this (or something similar) in ''urls.py',
-
-    from django.conf import settings
-    from static_models.views import StaticView
-        ...
-    path('site/<path:path>/', StaticView.as_view(path_root= settings.MEDIA_ROOT + '/site/'), name='site-detail'),
-
-This code uses MEDIA_ROOT. StaticView has no opinion on the pathstyle. 
-
-The URL config above uses a 'path' for URL segment capture. That means it will serve any file generated through this app using the default config. For fine-grained URLs, StaticView also accepts 'pk' and 'slug' segment catures. 
-
-You can define path_root using a custom class declaration, With that you can configure fancy URL resolution/HTTP responses etc. e.g.
-
-    from django.conf import settings
-    from static_models.views import StaticView
-
-    class ArticleStaticView(StaticView):
-        path_root = settings.MEDIA_ROOT + '/site/article/'
-        ...
-
-And in ''urls.py',
-
-    from article.views import ArticleStaticView
-        ...
-        path('image2/<int:pk>/', ArticleStaticView.as_view(), name='image2-detail'),
-
- 
-
 ## Alternatives
 You could use some outside tool to grab pages directly from the server, in the same way a web-cache like Squid works.
 
