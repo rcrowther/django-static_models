@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import module_loading
-#from . import common
+#from django.utils import module_loading
 from static_models.model_generator import ModelManager
 from static_models.settings import settings
 
@@ -18,12 +17,7 @@ class Command(BaseCommand):
             '-o',
             '--overwrite',
             action='store_true',
-            help="Replace currently existing files (default is to rename)",
-        )
-        parser.add_argument(
-            '-i',
-            '--id_fieldname',
-            help="Pick a model field to use for writing filenames",
+            help="Replace currently existing files (default is to ignore)",
         )
         parser.add_argument(
             '-e',
@@ -32,33 +26,20 @@ class Command(BaseCommand):
             help="Add '.html' extension to generated files.",
         )
 
-    def handle(self, *args, **options):
-        # Model = common.get_model(options)
-                
-        # view_path = options['view']
-
-        # try:
-            # View = module_loading.import_string(view_path)
-        # except ValueError:
-            # raise CommandError("Unable to split path: path:'{}'".format(view_path))
-        # except (AttributeError, ImportError):
-            # split_path = view_path.rsplit('.', 1)
-            # raise CommandError("Unable to locate view in module. module:'{}' view:'{}'".format(
-            # split_path[0],
-            # split_path[1]
-            # ))           
+    def handle(self, *args, **options):         
         extension =  None
         if (options['html_extension']):
             extension = 'html'
              
         # ok, generate
         count = 0
-        for (Model, View) in settings.modelviews:
+        for (Model, View, id_fieldname, pathroot) in settings.modelviews:
             g = ModelManager(
                 Model, 
                 View,
+                pathroot=pathroot,
                 overwrite=options['overwrite'],
-                id_fieldname=options['id_fieldname'],
+                id_fieldname=id_fieldname,
                 extension=extension,
             )
 

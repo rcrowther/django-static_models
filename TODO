@@ -1,8 +1,12 @@
 = Detect
 Run onload (static?) checks
 
-Why is 'common' showing in management commands?
 
 Need middleware to choose between static/dynamic files
 
-Dithering between provide extensions, and not.
+Dithering between provide extensions, and not (Nginx say no?).
+
+
+Need a README writup of new settings
+
+Version bump and publish

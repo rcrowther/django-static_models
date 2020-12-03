@@ -26,9 +26,9 @@ class ModelManager():
         A model (not instance), or list of dictionaries. 
     view
         Must be at least a DetailView
-    subpath
+    pathroot
         Path from the configured rootdir to the output of this class.
-        If empty, the subpath is empty, unless the data is a model,
+        If empty, the pathroot is empty, unless the data is a model,
         in which case it defaults to a modelname and opetional 
         viewname. .
     overwrite
@@ -44,10 +44,10 @@ class ModelManager():
     def __init__(self, 
         data,
         view,
-        subpath='',
+        pathroot='',
         overwrite=False,
         path_includes_view=False,
-        id_fieldname='pk',
+        id_fieldname=None,
         extension=None,
     ):
         self.is_model = not( isinstance(data, list))
@@ -59,16 +59,18 @@ class ModelManager():
         self.overwrite = overwrite
 
         # decide a path from the configured dir to this view output
-        if (not subpath and self.is_model):
-            subpath = self.data._meta.model_name
+        if (not pathroot and self.is_model):
+            pathroot = self.data._meta.model_name
             if (path_includes_view):
-                subpath = os.path.join(subpath,
+                pathroot = os.path.join(pathroot,
                 self.camelcase_to_underscore(self.view.__class__.__name__)
             )
-        self.static_pathroot = os.path.join(settings.staticmodels_dir, subpath)
+        self.static_pathroot = os.path.join(settings.staticmodels_dir, pathroot)
         
         # make the dirs
         os.makedirs(self.static_pathroot, exist_ok=True)
+        if (not id_fieldname):
+            id_fieldname = 'pk'
         self.id_fieldname = id_fieldname
         extension = ''
         if (extension):
@@ -148,6 +150,7 @@ class ModelManager():
             objs = self.data
         count = 0
         for obj in objs:
+            #print(obj)
             r = self._create(obj)
             if (r):
                 count += 1 
