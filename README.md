@@ -136,7 +136,7 @@ I suggest to start you go look at the generated file. Try loading to a browser, 
 The generated pages will have correct internal links ie. for resources like CSS or image links. But...
 
 ### Servers and browsers default files without extensions
-This applies to Django def servers and to deployment servers like Apache and Nginx. 
+This applies to Django development servers and to deployment servers like Apache and Nginx. 
 
 If you used this app's default setup, you will generate files without an 'htm/html' extension. The files are named,
 
@@ -155,11 +155,9 @@ That way, every page will load and display. The issue with this is that links be
 
 
 #### Coax the server into using a different default type
-Browsers will not be able to read the files, they almost always use the extension, not the MIME type of the file. However...
+Browsers will not be able to read the files, they almost always use the extension, not the MIME type of the file. However, coaxing the server into seeing files as a different type is not as difficult as it sounds. It depends on your server. But if you can ask it to accept file types without an extension as MIME type 'text/html', you are up and running.
 
-Coaxing the server into seeing files as a different type is not as difficult as it sounds. It depends on your server. But if you can ask it to accept file types without an extension as MIME type 'text/html', you are up and running.
-
-As for delivery, there are another option. Many deployment servers would allow you to rewrite the file extension with an extension. Which is web-classic form, and guaranteed.
+As for delivery, there are another option. Many deployment servers would allow you to rewrite the filename with an extension. Which is web-classic form, and guaranteed.
  
 
 ## Viewing files in development
@@ -172,13 +170,11 @@ It would be interesting to have a parallel process for the static pages, but I'v
         ...
     path('site/<path:path>/', StaticView.as_view(path_root= settings.BASE_DIR  + '/site/'), name='site-detail'),
 
-This code uses a setting BASE_DIR. StaticView has no opinion on the pathstyle. 
-
-Now you can see all the static files on the URL 'site/...'. Such as 'site/page/many-wonders/'.
+This code uses a setting BASE_DIR. StaticView has no opinion on the pathstyle. Now you can see all the static files on the URL 'site/...'. Such as 'site/page/many-wonders/'.
 
 If there is a problem with the above, it is that links between pages will not work. All pages have been re-rooted to a URL root 'site'. A link like 'page/many-wonders' will now be broken. It needs to be 'site/page/many-wonders'. And we don't want to configure a URL for web root ('/') because likely you have some home page or other good use for that.
  
-However, for fine-grained URLs, StaticView also accepts 'pk' and 'slug' segment captures. So you can generate static pages, then rewrite urls.py, e.g. 
+As a partial solution, StaticView also accepts 'pk' and 'slug' segment captures. So you can generate static pages, then rewrite urls.py, e.g. 
 
     from django.conf import settings
     from static_models.views import StaticView
@@ -190,7 +186,7 @@ However, for fine-grained URLs, StaticView also accepts 'pk' and 'slug' segment 
     # original URL for dynamic pages
     #path('page/<slug:slug>/',  PageDetailView.as_view(), name='page-detail'), 
 
-Now links between pages work. And reverse URLs. But you will need to set up a URL path for every model you generate static files from.
+Now links between pages work. So reverse URLs. But you will need to set up a URL path for every model you generate static files from.
 
 
 ### Static definition, in the View, of path_root 
@@ -213,9 +209,9 @@ And in ''urls.py',
 
 
 ## Generating URL'/' root
-If you are planning an complete static site, as opposed to boosting part of your site, you may run into the Djanog root problem. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
+If you are planning an complete static site, as opposed to boosting part of your site, you may run into the Djanog root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
 
-Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through this app's page generation. Or you could take advantage of this app's psudo-model generation, and generate an 'index.html' page from your project's 'home' page view. That's the kind of purpose the pseudo-model code was added for.
+Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's psudo-model generation, and generate an 'index.html' page from your project's 'home' page view. That's the kind of purpose the pseudo-model code was added for.
 
 
 
