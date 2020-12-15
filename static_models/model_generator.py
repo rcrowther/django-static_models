@@ -110,21 +110,27 @@ class ModelManager():
     def _create(self, obj):
         dst = self.get_full_path(obj)
         isfile = os.path.isfile(dst) 
-        if((not isfile) or self.overwrite):
-            if (self.is_model):
-                self.view.object = obj
-                ctx = self.view.get_context_data()
-            else:
-                ctx = self.view.get_context_data(**obj)
-            tr = self.view.render_to_response(ctx)
-            
-            # Above only caches data, resolve
-            tr = tr.render()
-            
-            # Gets the data itself
-            #! still bytes
-            #! where stripped?
-            cf = ContentFile(tr.content, name=None)
+        
+        size = 0
+        if(isfile):
+            size = os.path.getsize(dst)
+        
+        if (self.is_model):
+            self.view.object = obj
+            ctx = self.view.get_context_data()
+        else:
+            ctx = self.view.get_context_data(**obj)
+        tr = self.view.render_to_response(ctx)
+        
+        # Above only caches data, resolve
+        tr = tr.render()
+        
+        # Gets the data itself
+        #! still bytes
+        #! where stripped?
+        cf = ContentFile(tr.content, name=None)
+        generated_size = cf.size
+        if ((generated_size != size)  or self.overwrite):
             with open(dst, 'wb') as fd:  
                 fd.writelines(cf.open())  
             return dst

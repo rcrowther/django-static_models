@@ -114,11 +114,13 @@ The main way of invoking the configuration. Typically,
 
 So,
 
-    ./manage.py -e modelstaticmerge
+    ./manage.py modelstaticmerge -e
 
 Will generate HTML files from the configuration. From the second configuration above the files will be put in site/page/ and will be named from the slug data + '.html'.
 
-The management command is a little stripped down. You can do the same, with more options, by using the shell to import the ModelGenerator class from static_models.utils. 
+By default modelstaticmerge will generate files where it finds no static file exists. And it will overwrite files that are not the same size as files it generates. It assumes these have been altered. But it will not modify files that are the same size.  This introduces some 'rclone' type behaviour. If you are using deployment or backup tools like 'rclone', they will be able to detect new and changed files themselves, and act efficiently. 
+
+The management command is a little stripped down. You can do the same, with a few more options, by using the shell to import the ModelGenerator class from static_models.utils. 
 
 
 ## ModelGenerator
@@ -211,7 +213,7 @@ And in ''urls.py',
 ## Generating URL'/' root
 If you are planning an complete static site, as opposed to boosting part of your site, you may run into the Djanog root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
 
-Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's psudo-model generation, and generate an 'index.html' page from your project's 'home' page view. That's the kind of purpose the pseudo-model code was added for.
+Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's pseudo-model generation, and generate an 'index.html' page from your project's 'home' page view. That's the kind of purpose the pseudo-model code was added for.
 
 
 
