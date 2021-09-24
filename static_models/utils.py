@@ -2,7 +2,7 @@ from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 
 
-
+#! unused?
 def get_model(model_path):
     Model = None
     if (model_path):

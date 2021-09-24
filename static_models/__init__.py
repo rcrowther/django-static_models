@@ -1,2 +1,2 @@
-'''Generate static pages from a model, then serve'''
-__version__= "0.3.0"
+'''Generate static pages from views'''
+__version__= "0.4.0"

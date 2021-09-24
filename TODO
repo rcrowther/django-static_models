@@ -1,12 +1,12 @@
 = Detect
 Run onload (static?) checks
 
+URL fragments probably has urllib injection someplace, so investigate more comptrhensive Request build.
 
-Need middleware to choose between static/dynamic files
+Deprecate settings
 
-Dithering between provide extensions, and not (Nginx say no?).
+? Full rename
 
-
-Need a README writup of new settings
+New README
 
 Version bump and publish

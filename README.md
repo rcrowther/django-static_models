@@ -1,18 +1,18 @@
 # django-static-models
-> :warning: **If you have tried this app** The configuration targeting has changed completely. The app has moved away from using Django storage, which is for unsafe material, to fixed configuration through 'settings.py'.
+> :warning: **If you have tried this app** This is a new version, with new and more comprehenive View evokation.
 
-Generate static pages from a Django app. Despite the name, can generate from most views, then puts the results in a directory.
+Generate static pages from a Django Views. The static pages are gathered in a single configurable directory, with appropriate subdirectories. The name of this app is historic, the app can now evoke pages from most Views.
 
-Has no deployment code. Deployment is assumed to be a separate step, and your business (and maybe trouble).
+This app is what I need it to be. It has no deployment code, as this is a separate step, and your business. However, the app is developing some generality.
 
 ## What this app is and is not
 Because most websites include some static files, the word ''static' has many uses,
 
-This app generates pages from the views in a Django site. This is mainly intended for creating a site where the deployed content is partially or fully static. Such a site will not have dynamic facilities such as logons or personalisation. But it will be fast, easy to deploy and, in terms of conventional concerns, have few security issues. 
+This app generates pages from the views in a Django site. The targetted Views will not have dynamic facilities such as logons or personalisation. Naturally, webpages delivered in this way will be fast, easy to deploy and, in terms of conventional concerns, have few/no security issues. 
 
-It should be noted that some dynamic facilities can still be added to such a site, using external services. Email handling, shopping, and search can be created using links to external sites. Javascript can be used to inject tailored information. Or Django can be enabled where necessary---if a site can function without logons, but needs a search, Django can be deployed without Admin. 
+It should be noted that some dynamic facilities can still be added to such pages. Email handling, shopping, and search can be created using links to external sites. Javascript can be used to inject tailored information. Or Django can be enabled where necessary---for, say, admin pages,
 
-This app is not for supplementing Django's existing tools for handling of static resources. Nor is it specifically for optimizing output. It is for generating pages from models, where those pages have no (or scripted) dynamic behaviour.
+This app is not for supplementing Django's existing tools for handling of static resources. Nor is it specifically for optimizing output. It is for generating pages from Views, where those pages have no (or scripted) dynamic behaviour.
 
 ## Why you may or may not use it
 Pros,
@@ -27,16 +27,18 @@ Cons,
 Quickstart is not a good name as there is no quick start here. You need a model and a view, typically a DetailView or like, to work with.
 
 - Set a config
-- Generate some pages './manage.py -o modelstaticmerge' 
+- Generate some pages './manage.py -o viewstaticmerge' 
 - Look in the 'site/' folder in the top level of the project,
 
 
 ## Overview
+The main app usage is like this---configure some settings which target app, run the management command, do something with the generated pages.
+ 
 The main work is in the config, which describes which views are served with what data, and where the generated pages are to be written.
 
-This being Django, the action is not as simple as it sounds. What the app does is generate an HTML response, which in Django is an encoded stream, then writes the contents to an HTML file, with a filename built from a pk (optionally, some other field, such as a slug). 
+This being Django, the action is not as simple as it sounds. What the app does is generate an HTML response, which in Django is an encoded stream. The stream is then written to an HTML file. There are carious combinations of configuration possible to decide file placement and name.
 
-The main code is in 'static_models.utils.ModelGenerator', which is well-documented. If you need a different kind of action, try look there.
+The main code is in 'static_models.utils.ViewGenerator', which is well-documented. You may want a different kind of action, for example semi-automatic page generation. If so, look at the ViewGenerator class.
 
 ## Install
 The code can either be downloaded from Github, or installed using Pip,
@@ -51,64 +53,87 @@ The code needs to be declared in settings.py,
 
 
 ## Configuration
-Is one of the most complex you will meet. Sorry, but the setup offers flexibility. A simple configuration is,
+You need to set a base directory,
 
-    STATIC_MODELVIEWS = [
+    STATICVIEWS_DIR = BASE_DIR / 'page_collection'
+
+or similar.
+
+### Generating from data Models
+A simple View configuration is,
+
+    STATIC_VIEWS = [
         {
-        'model' : 'page.Page', 
+        'query': 'all',
         'view' : 'page.views.PageDetailView',
         },
     ]
     ...
 
-This will render the model Page through the view PageDetailView. It will search for all Page objects, push the data in to the generator, which will render the output webpages one-by-one. These will be written to files in a top-level directory called 'sites/page'. The trailing section of the path comes from the name of the model. The output files will be named by the 'pk' e.g. '3.html'. For further details and adjustments that can be made, see [Management commands](#management-commands).
+This will render the model on the PageDetailView through the view PageDetailView. It will search for all Page objects, then render them to an auto-named directory. The output files will be named by the 'pk' e.g. '3'.
 
 Sometimes you will not want to use the 'pk' data to name the files. Configure like this,
 
-    STATIC_MODELVIEWS = [
+    STATIC_VIEWS = [
         {
-        'model' : 'page.Page', 
+        'query': 'all',
         'view' : 'page.views.PageDetailView',
-        'id_fieldname' : 'slug'
+        'filename_from_field' : 'slug',
         },
     ]
 
-'id_fieldname' says use the 'slug' field to name the files (this presumes the model Pages has a field called 'slug'). So now, in the 'sites' directory, the app may generate 'web-lunacy.html', not '3.html'.
+'filename_from_field' says use the 'slug' field to name the files (this presumes the model Pages has a field called 'slug'). So now, in the 'sites' directory, the app may generate a file 'web-lunacy', not '3'.
 
 
 Sometimes you will not want to use the model name to name the pathroot of the files. Configure like this,
 
-    STATIC_MODELVIEWS = [
+    STATIC_VIEWS = [
         {
-        'model' : 'page.Page', 
+        'query': 'all',
         'view' : 'page.views.PageDetailView',
-        'id_fieldname' : 'slug'
-        'pathroot' : 'arrticle'
+        'filename_from_field' : 'slug',
+        'filepath' : 'article'
         },
     ]
 
-Now the files go to 'site/article', not 'site/page'. You can substitute any path in 'pathroot', the filename is appended to the value.
+Now the files go to 'STATICMODELS_DIR/article', not 'STATICMODELS_DIR/Page'. You can substitute any path in 'filepath', the filename is appended to the value.
 
-A further trick. Django Model objects are designed to be general items, accessible through attributes. You can substitute your own dict data to imitate a set of Model objects, then push them into a view. This is naturally limited, you will not want to configure twenty objects like this. But it will allow you to generate a few special webpages, and also use views that do not accept models,
+### Generating from URLs
+If you are generating from database models, I recomment the approach above. However, some views get their information from URLs only e.g. ListViews contain all their information inside them, they only need evoking. Pressuming suitable views, 
+    {
+    'urls' : ('products/', 'about', 'home'),
+    'view' : 'hp_reviews.views.HPReviewListView',
+    'filepath' : 'products'
+    },
 
+This solution will guess filenames, which come from the last part of the URL path. Usually, it is better to state a 'dilepath'
 
-    STATIC_MODELVIEWS = [
-        {
-        'model' : [{'slug': 'about'}, {'slug':'terms'}, {'slug': 'contact'}], 
-        'view' : 'mud.views.site_pages_view.BasePagesView',
-        'id_fieldname' : 'slug'
-        },
-    ]
+You can state many URLs at once,
 
-This assumes BasePagesView accepts a URL with a 'slug' placeholder. Note also that 'id_fieldname' continues to work in this setup, and so will name the generated files as the given 'slug' field e.g. 'about.html'.
+    {
+    'urls' : ('about', 'home', 'contact'),
+    'view' : 'hp_reviews.views.SitePageDetailView',
+    'filepath' : ''
+    },
+
+### Generating one-off pages
+Some views do nothing but generate single pages. You can 'filename' these,
+
+    {
+    'view' : 'homepage.views.HomepageView',
+    'filename' : 'index',
+    }
 
 
 ## Management commands
 The main way of invoking the configuration. Typically,
 
-    ./manage.py modelstaticmerge
+    ./manage.py viewstaticmerge
 
--  -o, --overwrite       Replace currently existing files (default is to ignore)
+
+By default modelstaticmerge will not touch files if it finds the fenerated file wukk ve the same size as the existing file.  This is similar to 'rsync' behaviour. Also, it will nat add a file extension. But you have these options,
+
+-  -o, --overwrite       Replace currently existing files (default is to ignore if unchanged)
 - -e, --html_extension  Add '.html' extension to generated files.
 
 
@@ -118,18 +143,11 @@ So,
 
 Will generate HTML files from the configuration. From the second configuration above the files will be put in site/page/ and will be named from the slug data + '.html'.
 
-By default modelstaticmerge will generate files where it finds no static file exists. And it will overwrite files that are not the same size as files it generates. It assumes these have been altered. But it will not modify files that are the same size.  This introduces some 'rclone' type behaviour. If you are using deployment or backup tools like 'rclone', they will be able to detect new and changed files themselves, and act efficiently. 
-
-The management command is a little stripped down. You can do the same, with a few more options, by using the shell to import the ModelGenerator class from static_models.utils. 
+The management command is a little stripped down. You can do the same, with a few more options, by using the shell to import the ViewGenerator class from static_models.utils. 
 
 
-## ModelGenerator
-Offers options which may be of use.
-
-    path_includes_view
-        Path includes the view name. Default False
-
-If a pathroot is not offered, the path is generated from the path and the view. From the above examples, you might generate 'site/page/page-detail-view/web-lunacy.html'. This is a little deep for me, but it namespaces by the view. So if you want to generate pages from a model using more than one view, you should use this, or explicitly override to different destinations using 'pathroot'.
+## ViewGenerator
+Offers options which may be of use. All options are exposed in the settings or the management command,
 
 
 ## Viewing files
@@ -163,7 +181,7 @@ As for delivery, there are another option. Many deployment servers would allow y
  
 
 ## Viewing files in development
-Django static app has a middleware solution, where any URL looking for a file seeks first in the static' folder, and if that fails, goes hunting round the apps.
+Django static app has a middleware solution, where any URL looking for a file seeks first in the 'static' folder, and if that fails, goes hunting round the apps.
 
 It would be interesting to have a parallel process for the static pages, but I've not implemented this. However, I have bashed together a View that can deliver the pages, even with no extension. Put this in ''urls.py',
 
@@ -211,9 +229,9 @@ And in ''urls.py',
 
 
 ## Generating URL'/' root
-If you are planning an complete static site, as opposed to boosting part of your site, you may run into the Djanog root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
+If you are planning an complete static site, as opposed to boosting part of your site, you may run into the Django root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
 
-Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's pseudo-model generation, and generate an 'index.html' page from your project's 'home' page view. That's the kind of purpose the pseudo-model code was added for.
+Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's one-off generation, and generate an 'index.html' page from a project's 'home' page view.
 
 
 
@@ -257,7 +275,7 @@ For more options, run full static handling,
 g.obj_delete() can be used in the same way on post_delete, but be careful if you want to share the static pages, that you do not delete data expected elsewhere.
  
 ## Alternatives
-You could use some outside tool to grab pages directly from the server, in the same way a web-cache like Squid works.
+You could use some outside tool to grab pages from the server. In the same way a web-cache like Squid works.
 
 Closer to the codebase, Wagtail CMS have been [talking about using Gatsby](https://wagtail.io/blog/using-gatsby-wagtail-build-case-study/) for the purpose of storing static pages.
 

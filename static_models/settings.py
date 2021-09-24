@@ -1,10 +1,9 @@
 from django.conf import settings as dsettings
 from django.core.exceptions import ImproperlyConfigured
-from static_models import utils
 from django.utils import module_loading
 
 
-        
+#! Generally deprecated, in favour of a few checks
 class Settings():
     '''
     Gather settings from the settings file.
@@ -19,43 +18,49 @@ class Settings():
     '''
     def __init__(self):
         # defaults
-        self.staticmodels_dir = None
+        self.STATICVIEWS_DIR = None
         self.modelviews = []
-        if (not self.staticmodels_dir):
+        if (not self.STATICVIEWS_DIR):
             self.populate()
                  
     def populate(self):
-        if (not(hasattr(dsettings, 'STATICMODELS_DIR'))):
-            raise ImproperlyConfigured('The static_models app requires STATICMODELS_DIR to be defined in settings.')
-        self.staticmodels_dir = dsettings.STATICMODELS_DIR
+        if (not(hasattr(dsettings, 'STATICVIEWS_DIR'))):
+            raise ImproperlyConfigured('The static_models app requires a setting STATICVIEWS_DIR to be defined.')
+        self.staticviews_dir = dsettings.STATICVIEWS_DIR
             
-        if (hasattr(dsettings, 'STATIC_MODELVIEWS')):
-            modelviews = dsettings.STATIC_MODELVIEWS
-            self.modelviews = self.build_modelviews(modelviews)
+        if (hasattr(dsettings, 'STATIC_VIEWS')):
+            viewsettings = dsettings.STATIC_VIEWS
+            self.modelviews = self.build_viewsettings(viewsettings)
 
-    def build_modelviews(self, modelviews):
+    def check_viewsetting(self, vs):
+        #if (not ('data' in vs or 'urls' in vs)):
+        #    raise ImproperlyConfigured(f'The static_models app requires settings STATIC_MODELVIEWS entires to have a "data" or "urls" key (the key can be empty). entry:{vs}')
+        #if (('data' in vs) and not (isinstance(vs['data'], dict))):
+        #    raise ImproperlyConfigured(f'The static_models app setting STATIC_MODELVIEWS "data" key is not a dict. entry:{vs}')
+        if (not ('view' in vs)):
+            raise ImproperlyConfigured(f'The static_models app requires settings STATIC_MODELVIEWS entriies to have a "view" key. entry:{vs}')
+                         
+                         
+    def build_viewsettings(self, viewsettings):
         b = []
-        for mv in modelviews:
-            model = mv['model']
-            if not isinstance(model, list):
-                # given modelname, check model exists
-                model = utils.get_model(model)
+        for mv in viewsettings:
+            self.check_viewsetting(mv)
 
             # test existance of a view?
-            viewwname = mv['view']
-            view = module_loading.import_string(viewwname)
-            id_fieldname = 'pk'
-            if ('id_fieldname' in mv):
-                id_fieldname = mv['id_fieldname']
-            pathroot = ''
-            if ('pathroot' in mv):
-                pathroot = mv['pathroot']
-            b.append((model, view, id_fieldname, pathroot))
+            # in management or generator?
+            viewname = mv['view']
+            try:
+                view = module_loading.import_string(viewname)
+            except ImportError:
+                #print(repr(view))
+                raise ImproperlyConfigured(f'View not visible to a module loade. entry:{viewname}')
+                
+            b.append(mv)
         return b
             
     def __repr__(self):
-        return "Settings(staticmodels_dir:{}, modelviews:{})".format(
-            self.staticmodels_dir,
+        return "Settings(staticviews_dir:{}, modelviews:{})".format(
+            self.staticviews_dir,
             self.modelviews,
         )
 
