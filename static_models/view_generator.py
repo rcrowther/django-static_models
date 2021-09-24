@@ -169,13 +169,13 @@ class ViewStaticManager():
 ####
     def render_urls(self, View, urls):
         count = 0
-        for url in urls:
-            r = self.create_from_url(View, url)
+        for url_filename in urls.items():
+            r = self.create_from_url(View, url_filename)
             if (r):
                 count += 1 
         return count
 
-    def create_from_url(self, View, url):
+    def filename_from_url(self, url):
         urlparts = urlparse(url)
         if (urlparts.query or urlparts.fragment):
             query = ''
@@ -189,7 +189,14 @@ class ViewStaticManager():
             fid = urlparts.path.rsplit['/', 1][0]
         if not(fid):
             raise ImproperlyConfigured(f'Cannot construct an identifier from given URL. name:"{url}"')
-
+        return fid
+        
+    def create_from_url(self, View, url_filename):
+        url = url_filename[0]
+        fid = url_filename[1]
+        if (fid is None):
+            fid = self.filename_from_url(url)
+            
         # make the full filepath
         full_filepath = self.filepath / (fid + self.extension)
 

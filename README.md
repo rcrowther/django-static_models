@@ -98,23 +98,31 @@ Sometimes you will not want to use the model name to name the pathroot of the fi
 
 Now the files go to 'STATICMODELS_DIR/article', not 'STATICMODELS_DIR/Page'. You can substitute any path in 'filepath', the filename is appended to the value.
 
+
 ### Generating from URLs
-If you are generating from database models, I recomment the approach above. However, some views get their information from URLs only e.g. ListViews contain all their information inside them, they only need evoking. Pressuming suitable views, 
+If you are generating from database models, I recomment the approach above. However, some views get their information from URLs only e.g. ListViews contain all their information inside them, they only need evoking. Pressuming a suitable view, the key is the URL, the value is the filename, 
     {
-    'urls' : ('products/', 'about', 'home'),
+    'urls' : {'products/': 'preducts'},
     'view' : 'hp_reviews.views.HPReviewListView',
     'filepath' : 'products'
     },
 
-This solution will guess filenames, which come from the last part of the URL path. Usually, it is better to state a 'dilepath'
-
 You can state many URLs at once,
 
     {
-    'urls' : ('about', 'home', 'contact'),
+    'urls' : { 'home': 'index', 'about': 'about', 'contact': 'contact'},
     'view' : 'hp_reviews.views.SitePageDetailView',
     'filepath' : ''
     },
+
+The generating code can guess filenames, which come from the last part of the URL path. This can become silly from more complex URLs, resulting in files called '?by_price.html' and the like. But it would work ok for the above site page generation, so set the url settings values to None,
+
+    {
+    'urls' : { 'home': 'index', 'about': None, 'contact': None},
+    'view' : 'hp_reviews.views.SitePageDetailView',
+    'filepath' : ''
+    },
+
 
 ### Generating one-off pages
 Some views do nothing but generate single pages. You can 'filename' these,
