@@ -158,7 +158,14 @@ class ViewStaticManager():
 
         # can be a boring generic request for now.
         view.request = self.mk_request()
+
+        # get a context
+        # nearly all views have a context, but the base doesn't. So...
         ctx = {}
+        if (hasattr(view, 'get_context_data')):
+            ctx = view.get_context_data()
+
+        # get and render response
         count = 0
         response = view.render_to_response(ctx)        
         r = self.render(response, full_filepath)
