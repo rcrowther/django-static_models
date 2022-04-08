@@ -1,12 +1,9 @@
 import os
 import re
 import pathlib
-#from django.conf import settings
-from django.conf import settings as dsettings
-
+from django.conf import settings
 from django.http.request import HttpRequest, QueryDict
 from django.core.files.base import ContentFile
-from static_models.settings import settings
 from django.db import models
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import module_loading
@@ -14,6 +11,102 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
+from django.core.handlers.wsgi import WSGIRequest
+from io import BytesIO
+from urllib.parse import unquote_to_bytes, urljoin, urlparse, urlsplit
+from django.utils.encoding import force_bytes
+from django.utils.http import urlencode
+from django.core.servers.basehttp  import get_internal_wsgi_application
+
+
+class RequestFactory:
+    # Build a mocked up request
+    # hacked out of django.test.clients
+    def __init__(self):
+        #self.json_encoder = json_encoder
+        #self.defaults = defaults
+        #self.cookies = SimpleCookie()
+        self.errors = BytesIO()
+        
+    def _base_environ(self, **request):
+        """
+        The base environment for a request.
+        """
+        # This is a minimal valid WSGI environ dictionary, plus:
+        # - HTTP_COOKIE: for cookie support,
+        # - REMOTE_ADDR: often useful, see #8551.
+        # See https://www.python.org/dev/peps/pep-3333/#environ-variables
+        return {
+            'HTTP_COOKIE': '',
+            'PATH_INFO': '/',
+            'REMOTE_ADDR': '127.0.0.1',
+            'REQUEST_METHOD': 'GET',
+            'SCRIPT_NAME': '',
+            # Pretend on localhost, like the development it is
+            'SERVER_NAME': 'localhost',
+            'SERVER_PORT': '80',
+            'SERVER_PROTOCOL': 'HTTP/1.1',
+            'wsgi.version': (1, 0),
+            'wsgi.url_scheme': 'http',
+            #'wsgi.input': FakePayload(b''),
+            'wsgi.input':            BytesIO(),
+            'wsgi.errors': self.errors,
+            'wsgi.multiprocess': True,
+            'wsgi.multithread': False,
+            'wsgi.run_once': False,
+            #**self.defaults,
+            **request,
+        }
+
+    def request(self, **request):
+        "Construct a generic request object."
+        return WSGIRequest(self._base_environ(**request))
+
+    def generic(self, method, path, data='',
+                content_type='application/octet-stream', secure=False,
+                **extra):
+        """Construct an arbitrary HTTP request."""
+        parsed = urlparse(str(path))  # path can be lazy
+        data = force_bytes(data, settings.DEFAULT_CHARSET)
+        r = {
+            'PATH_INFO': self._get_path(parsed),
+            'REQUEST_METHOD': method,
+            'SERVER_PORT': '443' if secure else '80',
+            'wsgi.url_scheme': 'https' if secure else 'http',
+        }
+        # if data:
+            # r.update({
+                # 'CONTENT_LENGTH': str(len(data)),
+                # 'CONTENT_TYPE': content_type,
+                # 'wsgi.input': FakePayload(data),
+            # })
+        ##r.update(extra)
+        # If QUERY_STRING is absent or empty, we want to extract it from the URL.
+        if not r.get('QUERY_STRING'):
+            # WSGI requires latin-1 encoded strings. See get_path_info().
+            query_string = parsed[4].encode().decode('iso-8859-1')
+            r['QUERY_STRING'] = query_string
+        return self.request(**r)
+
+    def _get_path(self, parsed):
+        path = parsed.path
+        # If there are parameters, add them
+        if parsed.params:
+            path += ";" + parsed.params
+        path = unquote_to_bytes(path)
+        # Replace the behavior where non-ASCII values in the WSGI environ are
+        # arbitrarily decoded with ISO-8859-1.
+        # Refs comment in `get_bytes_from_wsgi()`.
+        return path.decode('iso-8859-1')
+
+    def get(self, path, data=None, secure=False, **extra):
+        """Construct a GET request."""
+        data = {} if data is None else data
+        return self.generic('GET', path, secure=secure, **{
+            'QUERY_STRING': urlencode(data, doseq=True),
+            **extra,
+        })
+       
 def get_view(viewname):
     '''
     Return a view class.
@@ -76,7 +169,7 @@ class ViewStaticManager():
             view = get_view(view)
         self.View = view
 
-        self.basepath = Path(dsettings.STATICVIEWS_DIR)
+        self.basepath = Path(settings.STATICVIEWS_DIR)
 
         # decide a path from the configured dir to this view output
         self.filepath = self.get_filepath(
@@ -95,6 +188,14 @@ class ViewStaticManager():
                       
         self.query = query
         self.urls = urls
+        if (urls):
+            # If there are URLs to process, start an internal server.
+            # This server is like the one run by ''runserver'
+            # Radically this is a BaseHandler, set with the local 
+            # environment. AFAIK, it needs no closure. Also, errors
+            # it throws are natural and good as they read.
+            self.server = get_internal_wsgi_application()
+        
         self.overwrite = overwrite
         self.filename = filename
         self.filename_from_field = filename_from_field
@@ -174,16 +275,11 @@ class ViewStaticManager():
         return count
 
 ####
-    def render_urls(self, View, urls):
-        count = 0
-        for url_filename in urls.items():
-            r = self.create_from_url(View, url_filename)
-            if (r):
-                count += 1 
-        return count
-
     def filename_from_url(self, url):
+        # Attempt to make a filename from a URL
+        # Try for a query, a fragment, then last part of path 
         urlparts = urlparse(url)
+        fid = ""
         if (urlparts.query or urlparts.fragment):
             query = ''
             if (urlparts.query):
@@ -193,12 +289,32 @@ class ViewStaticManager():
                 fragment = '#' + urlparts.fragment
             fid = query + fragment
         if not(fid):
-            fid = urlparts.path.rsplit['/', 1][0]
+            #! Not good enough. Different no last slash/slash
+            path = urlparts.path
+            if (path[-1] == "/"):
+                path = path[0 : -1]
+            path = path.rsplit('/', 1)
+            if (path):
+                fid = path[-1]
         if not(fid):
             raise ImproperlyConfigured(f'Cannot construct an identifier from given URL. name:"{url}"')
         return fid
+
+    # At some point, angling for this to be the method for view-writing 
+    # also
+    def writeContent(self, content, full_filepath):
+        isfile = full_filepath.is_file()         
+        size = 0
+        if(isfile):
+            size = os.path.getsize(full_filepath)
+        generated_size = len(content)
+        if ((generated_size != size) or self.overwrite):
+            with open(full_filepath, 'wb') as fd:  
+                fd.write(content) 
+            return full_filepath
+        return None
         
-    def create_from_url(self, View, url_filename):
+    def create_from_url(self, url_filename):
         url = url_filename[0]
         fid = url_filename[1]
         if (fid is None):
@@ -207,13 +323,27 @@ class ViewStaticManager():
         # make the full filepath
         full_filepath = self.filepath / (fid + self.extension)
 
-        # Tune up view with request
-        request = self.mk_request(url)
-        as_view = View.as_view() 
-        response = as_view(request) #, *args, **kwargs)
-        return   self.render(response, full_filepath)
+        req = self.mk_request(url)
+        
+        # Generate a mock request
+        rf = RequestFactory()
+        wsgiRequest = rf.get(url)
 
-                                                
+        # For a response, run through the server
+        httpResponse = self.server.get_response(wsgiRequest)
+        
+        # get content and write to file
+        content = httpResponse.content
+        return self.writeContent(content, full_filepath)
+
+    def render_urls(self, urls):
+        count = 0
+        for url_filename in urls.items():
+            r = self.create_from_url(url_filename)
+            if (r):
+                count += 1 
+        return count
+
     def render_query_set(self, View, query='all'):
         view = View()
         if (query == 'all'):
@@ -265,10 +395,10 @@ class ViewStaticManager():
         return None
 
     def create(self):
+        if (self.urls):
+            return self.render_urls(self.urls)
         if (self.query):
             return self.render_query_set(self.View, self.query)
-        if (self.urls):
-            return self.render_urls(self.View, self.urls)
         return self.render_no_input(self.View, self.filename)
 
     def delete(self):
