@@ -1,22 +1,22 @@
 # django-static-models
-> :warning: **If you have tried this app** This is a new version, with new and more comprehenive View evokation.
+> :warning: **If you have tried this app** This is a new version, can run older configs, but URL handling is new and much extended 
 
-Generate static pages from a Django Views. The static pages are gathered in a single configurable directory, with appropriate subdirectories. The name of this app is historic, the app can now evoke pages from most Views.
+Generate static pages from a Django Views. The static pages are gathered in a single configurable directory, with appropriate generated or configured subdirectories. The name of this app is historic, the app can now evoke pages from most Views.
 
 This app is what I need it to be. It has no deployment code, as this is a separate step, and your business. However, the app is developing some generality.
 
 ## What this app is and is not
 Because most websites include some static files, the word ''static' has many uses,
 
-This app generates pages from the views in a Django site. The targetted Views will not have dynamic facilities such as logons or personalisation. Naturally, webpages delivered in this way will be fast, easy to deploy and, in terms of conventional concerns, have few/no security issues. 
+This app generates pages from views and URLs in a Django site. The targetted Views will not have dynamic facilities such as logons or personalisation. Naturally, webpages delivered in this way will be fast, easy to deploy and, in terms of conventional concerns, have few/no security issues. 
 
 It should be noted that some dynamic facilities can still be added to such pages. Email handling, shopping, and search can be created using links to external sites. Javascript can be used to inject tailored information. Or Django can be enabled where necessary---for, say, admin pages,
 
-This app is not for supplementing Django's existing tools for handling of static resources. Nor is it specifically for optimizing output. It is for generating pages from Views, where those pages have no (or scripted) dynamic behaviour.
+This app is not for supplementing Django's existing tools for handling of static resources. Nor is it specifically for optimizing output.
 
 ## Why you may or may not use it
 Pros,
-- You want static pages from a Django project output
+- You want to output static pages from a Django project
 - Simple. Add some configuration
 
 Cons,
@@ -24,7 +24,7 @@ Cons,
 - Deploy is not considered
 
 ## Quickstart
-Quickstart is not a good name as there is no quick start here. You need a model and a view, typically a DetailView or like, to work with.
+Quickstart is not a good name as there is no quick start here. You need a model and a view, typically a DetailView or like, to work with. Or use some URLs,
 
 - Set a config
 - Generate some pages './manage.py -o viewstaticmerge' 
@@ -32,7 +32,7 @@ Quickstart is not a good name as there is no quick start here. You need a model 
 
 
 ## Overview
-The main app usage is like this---configure some settings which target app, run the management command, do something with the generated pages.
+The main app usage is like this---configure some settings which target a View, run the management command, do something with the generated pages.
  
 The main work is in the config, which describes which views are served with what data, and where the generated pages are to be written.
 
@@ -100,25 +100,25 @@ Now the files go to 'STATICMODELS_DIR/article', not 'STATICMODELS_DIR/Page'. You
 
 
 ### Generating from URLs
-If you are generating from database models, I recomment the approach above. However, some views get their information from URLs only e.g. ListViews contain all their information inside them, they only need evoking. Pressuming a suitable view, the key is the URL, the value is the filename, 
+If you are generating from database models, I recomment the approach above. However, some views get their information from URLs only e.g. ListViews contain all their information inside them, they only need evoking. Presuming a suitable view, the key is the URL, the value is the filename, 
     {
     'urls' : {'products/': 'preducts'},
-    'view' : 'hp_reviews.views.HPReviewListView',
     'filepath' : 'products'
+    },
+
+
+If the filename, the value, is None, the generator makes a filename from the URL. May work in many instances,
+
+    {
+    'urls' : { 'home': 'index', 'about': None, 'contact': None},
+    'view' : 'hp_reviews.views.SitePageDetailView',
+    'filepath' : ''
     },
 
 You can state many URLs at once,
 
     {
     'urls' : { 'home': 'index', 'about': 'about', 'contact': 'contact'},
-    'view' : 'hp_reviews.views.SitePageDetailView',
-    'filepath' : ''
-    },
-
-The generating code can guess filenames, which come from the last part of the URL path. This can become silly from more complex URLs, resulting in files called '?by_price.html' and the like. But it would work ok for the above site page generation, so set the url settings values to None,
-
-    {
-    'urls' : { 'home': 'index', 'about': None, 'contact': None},
     'view' : 'hp_reviews.views.SitePageDetailView',
     'filepath' : ''
     },
@@ -237,7 +237,7 @@ And in ''urls.py',
 
 
 ## Generating URL'/' root
-If you are planning an complete static site, as opposed to boosting part of your site, you may run into the Django root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
+If you are planning a complete static site, as opposed to boosting part of your site, you may run into the Django root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
 
 Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's one-off generation, and generate an 'index.html' page from a project's 'home' page view.
 

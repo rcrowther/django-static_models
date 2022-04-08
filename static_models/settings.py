@@ -37,8 +37,8 @@ class Settings():
         #    raise ImproperlyConfigured(f'The static_models app requires settings STATIC_MODELVIEWS entires to have a "data" or "urls" key (the key can be empty). entry:{vs}')
         #if (('data' in vs) and not (isinstance(vs['data'], dict))):
         #    raise ImproperlyConfigured(f'The static_models app setting STATIC_MODELVIEWS "data" key is not a dict. entry:{vs}')
-        if (not ('view' in vs)):
-            raise ImproperlyConfigured(f'The static_models app requires settings STATIC_MODELVIEWS entriies to have a "view" key. entry:{vs}')
+        if (not ('urls') and not ('view' in vs)):
+            raise ImproperlyConfigured(f'The static_models app requires settings STATIC_MODELVIEWS entriies to have a "view" pt "urls" key. entry:{vs}')
                          
                          
     def build_viewsettings(self, viewsettings):
@@ -48,14 +48,15 @@ class Settings():
 
             # test existance of a view?
             # in management or generator?
-            viewname = mv['view']
-            try:
-                view = module_loading.import_string(viewname)
-            except ImportError:
-                #print(repr(view))
-                raise ImproperlyConfigured(f'View not visible to a module loade. entry:{viewname}')
-                
-            b.append(mv)
+            if ('view' in mv):
+                viewname = mv['view']
+                try:
+                    view = module_loading.import_string(viewname)
+                except ImportError:
+                    #print(repr(view))
+                    raise ImproperlyConfigured(f'View not visible to a module loader. entry:{viewname}')
+                    
+                b.append(mv)
         return b
             
     def __repr__(self):
