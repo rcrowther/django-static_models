@@ -55,7 +55,7 @@ class Command(BaseCommand):
                     
         for vs in settings.modelviews:
             g = ViewStaticManager(
-                vs['view'],
+                vs.get('view'),
                 vs['query'], 
                 vs['urls'],
                 vs['filename'],

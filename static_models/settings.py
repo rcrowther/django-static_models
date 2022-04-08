@@ -56,7 +56,7 @@ class Settings():
                     #print(repr(view))
                     raise ImproperlyConfigured(f'View not visible to a module loader. entry:{viewname}')
                     
-                b.append(mv)
+            b.append(mv)
         return b
             
     def __repr__(self):

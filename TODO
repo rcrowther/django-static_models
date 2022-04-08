@@ -3,10 +3,10 @@ Run onload (static?) checks
 
 URL fragments probably has urllib injection someplace, so investigate more comptrhensive Request build.
 
-Deprecate settings
+Deprecate settings PLEASE
+Put the View Loader into the generator
+Make robustly generate, even with errors
+
 
 ? Full rename
 
-New README
-
-Version bump and publish

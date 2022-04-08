@@ -156,7 +156,7 @@ class ViewStaticManager():
     '''
     #! reorder
     def __init__(self, 
-        view,
+        view = None,
         query=None,
         urls=[],
         filename=None,
