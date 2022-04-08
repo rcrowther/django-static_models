@@ -19,6 +19,8 @@ from django.utils.http import urlencode
 from django.core.servers.basehttp  import get_internal_wsgi_application
 
 
+    
+                    
 class RequestFactory:
     # Build a mocked up request
     # hacked out of django.test.clients
@@ -157,13 +159,13 @@ class ViewStaticManager():
     #! reorder
     def __init__(self, 
         view = None,
-        query=None,
-        urls=[],
-        filename=None,
-        filename_from_field='pk',
-        filepath=None,
-        overwrite=False,
-        extension='',
+        query = None,
+        urls = [],
+        filename = None,
+        filename_from_field ='pk',
+        filepath = None,
+        overwrite = False,
+        extension = '',
     ):
         if isinstance(view, str): 
             view = get_view(view)
