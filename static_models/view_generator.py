@@ -142,9 +142,10 @@ class ViewStaticManager():
         List of IRLs to evoke the View.
     filename
         A name for one-off view evokation.
-    filename_from_field
-        The value from this fieldname is used to provide the filename.
-        Most likely targets a slugfield. Default is 'pk'
+    filename_from_attribute
+        For use on models. The value from this fieldname is used to 
+        provide the filename. Most likely targets a slugfield. Can also
+        build from zero-attribute callables. Default is 'pk'
     filepath
         Path from the configured rootdir to the output of this class.
         If empty, the pathroot is empty, unless the data is a model,
@@ -162,7 +163,7 @@ class ViewStaticManager():
         query = None,
         urls = [],
         filename = None,
-        filename_from_field ='pk',
+        filename_from_attribute ='pk',
         filepath = None,
         overwrite = False,
         extension = '',
@@ -200,8 +201,8 @@ class ViewStaticManager():
         
         self.overwrite = overwrite
         self.filename = filename
-        self.filename_from_field = filename_from_field
-        self.id_fieldname = filename_from_field
+        self.filename_from_attribute = filename_from_attribute
+        self.id_fieldname = filename_from_attribute
 
 
                     
@@ -361,7 +362,9 @@ class ViewStaticManager():
         return count
                 
     def create_from_obj(self, view, obj):
-        fid = getattr(obj, self.filename_from_field) 
+        fid = getattr(obj, self.filename_from_attribute) 
+        if callable(fid):
+            fid = fid()
         full_filepath = self.filepath / (fid + self.extension)
         view.object = obj
 

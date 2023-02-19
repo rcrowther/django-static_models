@@ -8,7 +8,7 @@ This app is what I need it to be. It has no deployment code, as this is a separa
 ## What this app is and is not
 Because most websites include some static files, the word ''static' has many uses,
 
-This app generates pages from views and URLs in a Django site. The targetted Views will not have dynamic facilities such as logons or personalisation. Naturally, webpages delivered in this way will be fast, easy to deploy and, in terms of conventional concerns, have few/no security issues. 
+This app generates pages from views and URLs in a Django site. The targetted Views will not have dynamic facilities such as logons or personalisation. Naturally, webpages delivered in this way will be fast, easy to deploy and, in terms of conventional concerns, have few security issues. 
 
 It should be noted that some dynamic facilities can still be added to such pages. Email handling, shopping, and search can be created using links to external sites. Javascript can be used to inject tailored information. Or Django can be enabled where necessary---for, say, admin pages,
 
@@ -32,11 +32,11 @@ Quickstart is not a good name as there is no quick start here. You need a model 
 
 
 ## Overview
-The main app usage is like this---configure some settings which target a View, run the management command, do something with the generated pages.
+The process for main app usage is... configure some settings which target a View, run the management command, do something with the generated pages.
  
 The main work is in the config, which describes which views are served with what data, and where the generated pages are to be written.
 
-This being Django, the action is not as simple as it sounds. What the app does is generate an HTML response, which in Django is an encoded stream. The stream is then written to an HTML file. There are carious combinations of configuration possible to decide file placement and name.
+This being Django, the action is not as simple as it sounds. What the app does is generate an HTML response, which in Django is an encoded stream. The stream is then written to an HTML file. There are various configurations possible to decide file placement and name.
 
 The main code is in 'static_models.utils.ViewGenerator', which is well-documented. You may want a different kind of action, for example semi-automatic page generation. If so, look at the ViewGenerator class.
 
@@ -72,18 +72,19 @@ A simple View configuration is,
 
 This will render the model on the PageDetailView through the view PageDetailView. It will search for all Page objects, then render them to an auto-named directory. The output files will be named by the 'pk' e.g. '3'.
 
-Sometimes you will not want to use the 'pk' data to name the files. Configure like this,
+Often you will not want to use the 'pk' data to name the files. Configure like this,
 
     STATIC_VIEWS = [
         {
         'query': 'all',
         'view' : 'page.views.PageDetailView',
-        'filename_from_field' : 'slug',
+        'filename_from_attribute' : 'slug',
         },
     ]
 
-'filename_from_field' says use the 'slug' field to name the files (this presumes the model Pages has a field called 'slug'). So now, in the 'sites' directory, the app may generate a file 'web-lunacy', not '3'.
+This configuration presumes the model Pages has a field called 'slug'. 'filename_from_attribute' uses the 'slug' field to name the files. So now, in the 'sites' directory, the app may generate a file 'web-lunacy', not '3'. 
 
+Note that Django configures models so that the fields are acessible as Python attributes. 'filename_from_attribute' can also call a zero-argument callable (method/function whatever). This makes it possible to generate pages from different views of the same object---add a callable returning the secondary filenames/url_id to the model.
 
 Sometimes you will not want to use the model name to name the pathroot of the files. Configure like this,
 
@@ -91,7 +92,7 @@ Sometimes you will not want to use the model name to name the pathroot of the fi
         {
         'query': 'all',
         'view' : 'page.views.PageDetailView',
-        'filename_from_field' : 'slug',
+        'filename_from_attribute' : 'slug',
         'filepath' : 'article'
         },
     ]
@@ -102,12 +103,12 @@ Now the files go to 'STATICMODELS_DIR/article', not 'STATICMODELS_DIR/Page'. You
 ### Generating from URLs
 If you are generating from database models, I recomment the approach above. However, some views get their information from URLs only e.g. ListViews contain all their information inside them, they only need evoking. Presuming a suitable view, the key is the URL, the value is the filename, 
     {
-    'urls' : {'products/': 'preducts'},
+    'urls' : {'products/': 'products'},
     'filepath' : 'products'
     },
 
 
-If the filename, the value, is None, the generator makes a filename from the URL. May work in many instances,
+If the filename (the value) is None, the generator makes a filename from the URL. May work in many instances,
 
     {
     'urls' : { 'home': 'index', 'about': None, 'contact': None},
@@ -139,7 +140,7 @@ The main way of invoking the configuration. Typically,
     ./manage.py viewstaticmerge
 
 
-By default modelstaticmerge will not touch files if it finds the fenerated file wukk ve the same size as the existing file.  This is similar to 'rsync' behaviour. Also, it will nat add a file extension. But you have these options,
+By default 'modelstaticmerge' will not touch files if it finds the generated files work are the same size as the existing file.  This is similar to 'rsync' behaviour. Also, it will not add a file extension. But you have these options,
 
 -  -o, --overwrite       Replace currently existing files (default is to ignore if unchanged)
 - -e, --html_extension  Add '.html' extension to generated files.
@@ -151,7 +152,7 @@ So,
 
 Will generate HTML files from the configuration. From the second configuration above the files will be put in site/page/ and will be named from the slug data + '.html'.
 
-The management command is a little stripped down. You can do the same, with a few more options, by using the shell to import the ViewGenerator class from static_models.utils. 
+The management command is a little stripped down. You can do the same, with a few more options, by using the shell to import the ViewGenerator class from static_models.utils.
 
 
 ## ViewGenerator
@@ -237,7 +238,7 @@ And in ''urls.py',
 
 
 ## Generating URL'/' root
-If you are planning a complete static site, as opposed to boosting part of your site, you may run into the Django root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or gets a configured URL. So what will you do with '/'?
+If you are planning a complete static site, as opposed to boosting part of your site, you may run into the Django root abstraction. Django serves static files from the 'static/' directory, not the root. It has no analogy for a physical base 'root' directory. It either errors, or returns a configured URL. So what will you do with '/'?
 
 Well, most visual websites will have a 'home' page of some kind. You could cook something up in deployment, and ignore anything that doesn't work through page generation. Or you could take advantage of this app's one-off generation, and generate an 'index.html' page from a project's 'home' page view.
 
@@ -296,5 +297,5 @@ Closer to the codebase, Wagtail CMS have been [talking about using Gatsby](https
     A middleware solution, which makes sense. Probably more of an optimiser than a generator, but untested.
 
 [django-static-pages](https://pypi.org/project/django-static-pages/)
-    Uses test client to generate pages, Not clear if it is only for testing?
+    Uses a test client to generate pages, Not clear if it is only for testing?
 

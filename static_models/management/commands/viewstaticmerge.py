@@ -37,8 +37,8 @@ class Command(BaseCommand):
             vs['urls'] = []
         if (not('filename' in vs)):
             vs['filename'] = None
-        if (not('filename_from_field' in vs)):
-            vs['filename_from_field'] = 'pk'
+        if (not('filename_from_attribute' in vs)):
+            vs['filename_from_attribute'] = 'pk'
         if (not('filepath' in vs)):
             vs['filepath'] = None
         return vs
@@ -83,7 +83,7 @@ class Command(BaseCommand):
                     vs['query'], 
                     vs['urls'],
                     vs['filename'],
-                    vs['filename_from_field'],
+                    vs['filename_from_attribute'],
                     vs['filepath'],
                     overwrite=options['overwrite'],
                     extension=extension,
