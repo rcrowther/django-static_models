@@ -371,7 +371,9 @@ class ViewStaticManager():
         fid = getattr(obj, self.filename_from_attribute) 
         if callable(fid):
             fid = fid()
-        full_filepath = self.filepath / (fid + self.extension)
+        
+        # NB: fid may come through as numeric e.g. 'pk'
+        full_filepath = self.filepath / (str(fid) + self.extension)
         view.object = obj
 
         # can be a boring generic request for now.
