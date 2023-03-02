@@ -326,9 +326,15 @@ class ViewStaticManager():
         # make the full filepath
         full_filepath = self.filepath / (fid + self.extension)
 
-        req = self.mk_request(url)
-        
+        # Only request a rough filepath in settings. So a very basic
+        # normalisation that the filepath is absolute to site base 
+        if (url[0] != '/'):
+            url = '/' + url
+            
         # Generate a mock request
+        # Needs to be a different level of handling because the only 
+        # data is a URL, no object to root out context etc.
+        # So go high, ask a test server
         rf = RequestFactory()
         wsgiRequest = rf.get(url)
 
